@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Alcea.Inventory — Stock Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ALCEA — deep forest green, gold line-art, cream */
+    --bg:#0d1f1a;         /* deepest green, page base */
+    --panel:#123028;      /* forest green surface (logo bg) */
+    --panel-2:#17392f;    /* raised green */
+    --line:#2a5347;       /* muted green hairline */
+    --ink:#f3efe2;        /* warm cream */
+    --ink-dim:#a9bdb1;    /* soft sage */
+    --ink-faint:#6f8a7c;  /* dim sage */
+    --gold:#c8a04e;       /* logo gold */
+    --gold-soft:#d9b96e;
+    --storage:#7fb8d6;    /* cool blue — receiving */
+    --prep:#d9b96e;       /* gold — prep */
+    --used:#8fc9a3;       /* sage green — used */
+    --waste:#d98a6a;      /* terracotta — waste */
+    --accent:#c8a04e;     /* gold is the brand accent */
+    --good:#8fc9a3;--bad:#d98a6a;--warn:#d9b96e;--r:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:'Jost',system-ui,-apple-system,sans-serif;font-size:16px;overscroll-behavior:none}
+  body{max-width:1100px;margin:0 auto;padding:0 14px 120px}
+
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg) 78%,transparent);
+    padding:16px 4px 12px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid transparent}
+  .brand-wrap{display:flex;align-items:center;gap:11px}
+  .brand-mark{width:26px;height:26px;flex:none}
+  .brand-mark path,.brand-mark line{stroke:var(--gold);stroke-width:1.3;fill:none;stroke-linecap:round}
+  .brand{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:26px;
+    letter-spacing:4px;line-height:1;color:var(--ink)}
+  .brand .sub{font-family:'Jost',sans-serif;display:block;font-size:9px;font-weight:500;
+    letter-spacing:5px;color:var(--gold);margin-top:2px}
+  .status{font-size:11px;color:var(--ink-dim);letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint)}
+  .dot.online{background:var(--good);box-shadow:0 0 8px var(--good)}
+  .dot.offline{background:var(--warn)}
+  .dot.error{background:var(--bad)}
+
+  .tabs{display:flex;gap:6px;position:sticky;top:56px;z-index:19;background:var(--bg);padding:6px 0 12px;flex-wrap:wrap}
+  .tab{flex:1;min-width:88px;padding:11px 8px;border:1px solid var(--line);background:var(--panel);
+    border-radius:10px;color:var(--ink-dim);font-size:13px;font-weight:600;text-align:center;cursor:pointer;letter-spacing:.5px;transition:.15s}
+  .tab.active{color:var(--gold);border-color:var(--gold);background:var(--panel-2);box-shadow:0 0 0 1px var(--gold) inset}
+
+  .view{display:none}
+  .view.active{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+  .card h3{margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;letter-spacing:.5px;color:var(--gold-soft)}
+  .muted{color:var(--ink-dim);font-size:13px;line-height:1.5}
+
+  .item{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+  .item-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .item-name{font-size:17px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .item-name .unit{font-size:12px;color:var(--ink-faint);font-weight:500}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .stage{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 8px;text-align:center;position:relative}
+  .stage .lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint)}
+  .stage .val{font-size:24px;font-weight:800;margin-top:2px;line-height:1}
+  .stage.s-storage .val{color:var(--storage)}
+  .stage.s-prep .val{color:var(--prep)}
+  .stage.s-used .val{color:var(--used)}
+  .stage .arrow{position:absolute;right:-9px;top:50%;transform:translateY(-50%);color:var(--ink-faint);font-size:13px;z-index:2}
+
+  .waste-line{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+  .waste-line .w{color:var(--waste);font-weight:700;font-size:14px}
+
+  .actrow{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
+  .btn{flex:1;min-width:0;padding:11px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.3px;transition:.12s;white-space:nowrap}
+  .btn:active{transform:scale(.97)}
+  .btn.receive{border-color:var(--storage);color:var(--storage)}
+  .btn.prep{border-color:var(--prep);color:var(--prep)}
+  .btn.used{border-color:var(--used);color:var(--used)}
+  .btn.waste{border-color:var(--waste);color:var(--waste)}
+  .btn-primary{background:var(--gold);border-color:var(--gold);color:#123028;font-weight:700}
+  .btn-ghost{background:transparent}
+
+  .recon-row{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .recon-row:last-child{border-bottom:none}
+  .recon-name{font-weight:600;font-size:15px}
+  .recon-name small{display:block;color:var(--ink-faint);font-size:11px;font-weight:400;margin-top:2px}
+  .pill{padding:5px 9px;border-radius:8px;font-size:13px;font-weight:700;text-align:center;min-width:52px}
+  .pill.inv{background:rgba(90,169,230,.12);color:var(--storage)}
+  .pill.pos{background:rgba(95,211,154,.12);color:var(--good)}
+  .pill.diff.ok{background:rgba(95,211,154,.14);color:var(--good)}
+  .pill.diff.bad{background:rgba(232,96,93,.14);color:var(--bad)}
+  .sales-in{width:60px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-size:15px;text-align:center;font-weight:700}
+  .recon-head{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);padding-bottom:8px;border-bottom:1px solid var(--line)}
+  .recon-head span:not(:first-child){min-width:52px;text-align:center}
+
+  .recipe{padding:12px 0;border-bottom:1px solid var(--line)}
+  .recipe:last-child{border-bottom:none}
+  .recipe-name{font-weight:700;font-size:15px;margin-bottom:6px}
+  .recipe-ing{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:14px;color:var(--ink-dim)}
+  .recipe-ing b{color:var(--ink)}
+
+  .logrow{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .logrow:last-child{border-bottom:none}
+  .logrow .t{color:var(--ink-faint);font-size:12px;min-width:64px}
+  .logrow .m{flex:1}
+  .tag{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:700;letter-spacing:.5px;height:fit-content}
+  .tag.receive{background:rgba(90,169,230,.14);color:var(--storage)}
+  .tag.prep{background:rgba(244,185,66,.14);color:var(--prep)}
+  .tag.used{background:rgba(95,211,154,.14);color:var(--used)}
+  .tag.waste{background:rgba(232,96,93,.14);color:var(--waste)}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:1100px;padding:20px 18px 28px;animation:up .2s ease}
+  @keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:none;opacity:1}}
+  .modal h3{margin:0 0 4px;font-size:18px}
+  .modal .muted{margin-bottom:14px}
+  .numbig{display:flex;align-items:center;gap:12px;margin:16px 0}
+  .numbig input{flex:1;font-size:34px;font-weight:800;text-align:center;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink)}
+  .stepper{width:56px;height:56px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-size:28px;font-weight:700;cursor:pointer}
+  .quick{display:flex;gap:7px;margin-bottom:16px}
+  .quick button{flex:1;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim);font-weight:600;cursor:pointer}
+  .modal-actions{display:flex;gap:9px}
+  .modal-actions .btn{padding:14px}
+  .stage-pick{display:flex;gap:7px;margin:6px 0 14px}
+  .stage-pick button{flex:1;padding:12px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim);font-weight:600;cursor:pointer;font-size:13px;line-height:1.3}
+  .stage-pick button.on{border-color:var(--waste);color:var(--waste);background:rgba(232,96,93,.08)}
+  .stage-pick button:disabled{opacity:.3;cursor:not-allowed}
+
+  label.fld{display:block;font-size:12px;color:var(--ink-dim);margin:10px 0 5px;letter-spacing:.5px}
+  input.txt,select.txt{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-size:15px}
+
+  .fab{position:fixed;right:16px;bottom:20px;z-index:30;width:56px;height:56px;border-radius:50%;background:var(--gold);color:#123028;border:none;font-size:28px;font-weight:400;box-shadow:0 8px 24px rgba(200,160,78,.45);cursor:pointer}
+
+  .empty{text-align:center;padding:40px 20px;color:var(--ink-faint)}
+  .empty .big{font-size:40px;margin-bottom:10px;opacity:.5}
+
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+  .sum{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .sum .k{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint)}
+  .sum .v{font-size:26px;font-weight:800;margin-top:3px}
+  .sum.match .v{color:var(--good)}
+  .sum.miss .v{color:var(--bad)}
+
+  .flag{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:2px}
+  .flag.low{background:var(--warn)}
+  .flag.out{background:var(--bad)}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--accent);padding:11px 18px;border-radius:10px;font-size:14px;z-index:60;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;max-width:90vw}
+  .toast.show{opacity:1}
+  .toast.err{border-color:var(--bad)}
+  .hint{font-size:12px;color:var(--ink-faint);margin-top:6px;line-height:1.5}
+  .banner{background:rgba(244,185,66,.1);border:1px solid var(--warn);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--warn);margin-bottom:12px;line-height:1.5}
+  .banner b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-wrap">
+    <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M4 34 V20 a5 5 0 0 1 5-5 a5 5 0 0 1 5 5 V34"/>
+      <path d="M16 34 V14 a4 4 0 0 1 4-4 a4 4 0 0 1 4 4 V34"/>
+      <path d="M26 34 V20 a5 5 0 0 1 5-5 a5 5 0 0 1 5 5 V34"/>
+      <line x1="2" y1="34" x2="38" y2="34"/>
+    </svg>
+    <div class="brand">ALCEA<span class="sub">INVENTORY</span></div>
+  </div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">local</span></div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-view="stock">STOCK</div>
+  <div class="tab" data-view="reconcile">RECONCILE</div>
+  <div class="tab" data-view="recipes">RECIPES</div>
+  <div class="tab" data-view="log">LOG</div>
+</div>
+
+<div class="view active" id="view-stock">
+  <div class="banner" id="cloud-banner" style="display:none"></div>
+  <div id="stock-list"></div>
+</div>
+
+<div class="view" id="view-reconcile">
+  <div class="card">
+    <h3>End of day check</h3>
+    <div class="muted">Enter what the POS sold. Larder converts each sale into ingredients used and compares it against what inventory recorded as used. A mismatch means unlogged usage, waste, or theft.</div>
+  </div>
+  <div class="card">
+    <h3>Sales from POS</h3>
+    <div class="muted" style="margin-bottom:10px">Type the quantity sold for each menu item.</div>
+    <div id="sales-inputs"></div>
+  </div>
+  <div class="card"><div class="summary-grid" id="recon-summary"></div></div>
+  <div class="card">
+    <h3>Ingredient reconciliation</h3>
+    <div class="recon-head"><span>Ingredient</span><span>Expected</span><span>Logged</span><span>Diff</span></div>
+    <div id="recon-rows"></div>
+    <div class="hint">Expected = ingredients implied by POS sales. Logged = total marked "used". Diff of 0 means tallied. Waste is tracked separately and shown per ingredient.</div>
+  </div>
+</div>
+
+<div class="view" id="view-recipes">
+  <div class="card">
+    <h3>Menu recipes</h3>
+    <div class="muted">Define how many of each ingredient a menu item consumes — this powers reconciliation. e.g. 1 Scramble = 2 eggs.</div>
+  </div>
+  <div class="card" id="recipe-list"></div>
+  <button class="btn btn-primary" style="width:100%;padding:14px" onclick="openRecipeModal()">+ Add menu item</button>
+</div>
+
+<div class="view" id="view-log">
+  <div class="card"><h3>Movements</h3><div class="muted" id="log-count">—</div></div>
+  <div class="card" id="log-list"></div>
+</div>
+
+<button class="fab" onclick="openItemModal()">+</button>
+
+<div class="modal-bg" id="move-modal">
+  <div class="modal">
+    <h3 id="mm-title">Move</h3>
+    <div class="muted" id="mm-sub"></div>
+    <div id="mm-stagepick-wrap" style="display:none">
+      <label class="fld">Waste from which stage?</label>
+      <div class="stage-pick" id="mm-stagepick"></div>
+    </div>
+    <div class="quick" id="mm-quick"></div>
+    <div class="numbig">
+      <button class="stepper" onclick="stepQty(-1)">−</button>
+      <input type="number" id="mm-qty" value="1" min="1" inputmode="numeric">
+      <button class="stepper" onclick="stepQty(1)">+</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('move-modal')">Cancel</button>
+      <button class="btn btn-primary" id="mm-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="item-modal">
+  <div class="modal">
+    <h3>Add ingredient</h3>
+    <div class="muted">A raw stock item that flows through storage → prep → used.</div>
+    <label class="fld">Name</label>
+    <input class="txt" id="it-name" placeholder="e.g. Chicken breast">
+    <label class="fld">Unit</label>
+    <input class="txt" id="it-unit" placeholder="e.g. piece, egg, kg, g">
+    <label class="fld">Low-stock warning at (storage count)</label>
+    <input class="txt" id="it-low" type="number" value="5" inputmode="numeric">
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal('item-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Add ingredient</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="recipe-modal">
+  <div class="modal">
+    <h3>Menu item</h3>
+    <div class="muted">Name the dish, then set how many of each ingredient it uses.</div>
+    <label class="fld">Menu name</label>
+    <input class="txt" id="rc-name" placeholder="e.g. Scramble Egg">
+    <div id="rc-ingredients"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal('recipe-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRecipe()">Save menu item</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   SUPABASE CONFIG — paste your two keys, then run the SQL from
+   the setup guide in the Supabase SQL editor once.
+   Leave both blank to run local-only (localStorage) for testing.
+   ============================================================ */
+const SUPABASE_URL = "";       // e.g. https://abcd.supabase.co
+const SUPABASE_ANON_KEY = "";  // your anon / public key
+/* ============================================================ */
+
+let sb=null, CLOUD=false;
+if(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase){
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  CLOUD = true;
+}
+
+const LS={ load(k,f){try{const v=localStorage.getItem('larder_'+k);return v?JSON.parse(v):f;}catch(e){return f;}}, save(k,v){localStorage.setItem('larder_'+k,JSON.stringify(v));} };
+
+let items = LS.load('items',[
+  { id:'egg', name:'Egg', unit:'egg', low:6, storage:0, prep:0, used:0, waste:0 },
+  { id:'chicken', name:'Chicken', unit:'piece', low:4, storage:0, prep:0, used:0, waste:0 }
+]);
+let recipes = LS.load('recipes',[
+  { id:'scramble', name:'Scramble Egg', ing:{ egg:2 } },
+  { id:'grilledchx', name:'Grilled Chicken', ing:{ chicken:1 } }
+]);
+let log = LS.load('log',[]);
+let sales = LS.load('sales',{});
+
+function cacheLocal(){ LS.save('items',items); LS.save('recipes',recipes); LS.save('log',log); LS.save('sales',sales); }
+
+function setStatus(state){
+  const dot=$('#dot'), txt=$('#statusTxt');
+  dot.className='dot '+state;
+  txt.textContent = state==='online'?'synced':state==='offline'?'offline · local':state==='error'?'sync error':'local mode';
+}
+
+const $=s=>document.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!==undefined)e.innerHTML=h;return e;};
+const findItem=id=>items.find(i=>i.id===id);
+function toast(msg,err){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');clearTimeout(t._x);t._x=setTimeout(()=>t.className='toast',1800);}
+function nowTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'')+Math.random().toString(36).slice(2,5);}
+
+/* ---------------- CLOUD SYNC ---------------- */
+async function cloudPullAll(){
+  if(!CLOUD){ setStatus('local'); return; }
+  try{
+    const [it,rc,mv,sl] = await Promise.all([
+      sb.from('items').select('*').order('created_at'),
+      sb.from('recipes').select('*').order('created_at'),
+      sb.from('movements').select('*').order('created_at',{ascending:false}).limit(100),
+      sb.from('sales').select('*')
+    ]);
+    if(it.error||rc.error||mv.error||sl.error) throw (it.error||rc.error||mv.error||sl.error);
+    if(it.data&&it.data.length) items=it.data.map(r=>({id:r.id,name:r.name,unit:r.unit,low:r.low,storage:r.storage,prep:r.prep,used:r.used,waste:r.waste}));
+    else if(items.length) for(const i of items) await sb.from('items').upsert(i);
+    if(rc.data&&rc.data.length) recipes=rc.data.map(r=>({id:r.id,name:r.name,ing:r.ing}));
+    else if(recipes.length) for(const r of recipes) await sb.from('recipes').upsert(r);
+    log=(mv.data||[]).map(r=>({type:r.type,msg:r.msg,t:new Date(r.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}));
+    sales={}; (sl.data||[]).forEach(r=>{sales[r.recipe_id]=r.qty;});
+    cacheLocal(); setStatus('online'); renderAll();
+  }catch(e){ console.error(e); setStatus('error'); toast('Cloud read failed — using local',true); }
+}
+async function pushItem(it){ if(!CLOUD)return; const {error}=await sb.from('items').upsert(it); if(error){setStatus('error');toast('Sync failed — saved locally',true);}else setStatus('online'); }
+async function pushRecipe(r){ if(!CLOUD)return; const {error}=await sb.from('recipes').upsert(r); if(error)setStatus('error');else setStatus('online'); }
+async function delRecipeCloud(id){ if(!CLOUD)return; await sb.from('recipes').delete().eq('id',id); await sb.from('sales').delete().eq('recipe_id',id); }
+async function pushSale(recipe_id,qty){ if(!CLOUD)return; const {error}=await sb.from('sales').upsert({recipe_id,qty}); if(error)setStatus('error');else setStatus('online'); }
+async function pushMovement(type,msg){ if(!CLOUD)return; await sb.from('movements').insert({type,msg}); }
+
+function subscribeRealtime(){
+  if(!CLOUD)return;
+  sb.channel('larder-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'items'},cloudPullAll)
+    .on('postgres_changes',{event:'*',schema:'public',table:'movements'},cloudPullAll)
+    .on('postgres_changes',{event:'*',schema:'public',table:'sales'},cloudPullAll)
+    .subscribe();
+}
+function addLog(type,msg){ log.unshift({type,msg,t:nowTime()}); cacheLocal(); pushMovement(type,msg); }
+
+/* ---------------- STOCK ---------------- */
+function renderStock(){
+  const wrap=$('#stock-list'); wrap.innerHTML='';
+  const banner=$('#cloud-banner');
+  if(!CLOUD){ banner.style.display='block'; banner.innerHTML='<b>Local mode.</b> Add your Supabase URL + key at the top of the script to sync across devices. Data is on this device only for now.'; }
+  else banner.style.display='none';
+  if(!items.length){ wrap.appendChild(el('div','empty','<div class="big">🍳</div>No ingredients yet.<br>Tap + to add one.')); return; }
+  items.forEach(it=>{
+    const card=el('div','item');
+    let flag='';
+    if(it.storage<=0) flag='<span class="flag out"></span>';
+    else if(it.storage<=it.low) flag='<span class="flag low"></span>';
+    card.innerHTML=`
+      <div class="item-top"><div class="item-name">${flag}${it.name} <span class="unit">/ ${it.unit}</span></div></div>
+      <div class="flow">
+        <div class="stage s-storage"><div class="lbl">Storage</div><div class="val">${it.storage}</div><div class="arrow">→</div></div>
+        <div class="stage s-prep"><div class="lbl">Prep / Kitchen</div><div class="val">${it.prep}</div><div class="arrow">→</div></div>
+        <div class="stage s-used"><div class="lbl">Used</div><div class="val">${it.used}</div></div>
+      </div>
+      <div class="waste-line"><span class="muted">Wasted (all stages)</span><span class="w">${it.waste} ${it.unit}${it.waste===1?'':'s'}</span></div>
+      <div class="actrow">
+        <button class="btn receive" onclick="move('${it.id}','receive')">＋ Receive</button>
+        <button class="btn prep" onclick="move('${it.id}','prep')">→ Prep</button>
+        <button class="btn used" onclick="move('${it.id}','used')">✓ Use</button>
+        <button class="btn waste" onclick="move('${it.id}','waste')">✕ Waste</button>
+      </div>`;
+    wrap.appendChild(card);
+  });
+}
+
+/* ---------------- MOVE MODAL ---------------- */
+let pending=null, wasteStage='storage';
+const MOVE={
+  receive:{title:'Receive stock',sub:'Checkpoint 1 — goods in from supplier, into storage freezer.',quick:[6,10,12,20],confirm:'Add to storage'},
+  prep:{title:'Move to prep',sub:'Checkpoint 2 — from storage into kitchen for prepping.',quick:[2,4,6,10],confirm:'Move to prep'},
+  used:{title:'Use for order',sub:'Checkpoint 3 — consumed cooking a final product.',quick:[1,2,3,4],confirm:'Mark used'},
+  waste:{title:'Log wastage',sub:'Expired, dropped, broken or spoiled. Choose the stage the loss came from.',quick:[1,2,3,5],confirm:'Log waste'}
+};
+function move(id,type){
+  const it=findItem(id); pending={id,type};
+  const cfg=MOVE[type];
+  $('#mm-title').textContent=cfg.title+' · '+it.name;
+  $('#mm-sub').textContent=cfg.sub;
+  $('#mm-qty').value=type==='used'?2:cfg.quick[0];
+  const q=$('#mm-quick'); q.innerHTML='';
+  cfg.quick.forEach(n=>{const b=el('button',null,'+'+n);b.onclick=()=>{$('#mm-qty').value=n;};q.appendChild(b);});
+  $('#mm-confirm').textContent=cfg.confirm;
+  const spWrap=$('#mm-stagepick-wrap');
+  if(type==='waste'){
+    spWrap.style.display='block';
+    const sp=$('#mm-stagepick'); sp.innerHTML='';
+    wasteStage = it.storage>0?'storage':it.prep>0?'prep':it.used>0?'used':'storage';
+    [['storage','Storage',it.storage],['prep','Prep',it.prep],['used','Used',it.used]].forEach(([key,label,avail])=>{
+      const b=el('button',null,`${label}<br><small style="opacity:.7">${avail} avail</small>`);
+      b.disabled=avail<=0;
+      if(key===wasteStage&&!b.disabled) b.classList.add('on');
+      b.onclick=()=>{ wasteStage=key; document.querySelectorAll('#mm-stagepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); };
+      sp.appendChild(b);
+    });
+  } else spWrap.style.display='none';
+  openModal('move-modal');
+}
+function stepQty(d){const i=$('#mm-qty');i.value=Math.max(1,(parseInt(i.value)||0)+d);}
+
+$('#mm-confirm').onclick=()=>{
+  const it=findItem(pending.id);
+  const q=Math.max(1,parseInt($('#mm-qty').value)||0);
+  const t=pending.type;
+  if(t==='receive'){ it.storage+=q; addLog('receive',`+${q} ${it.name} received into storage`); }
+  else if(t==='prep'){ if(it.storage<q){toast('Only '+it.storage+' in storage',true);return;} it.storage-=q; it.prep+=q; addLog('prep',`${q} ${it.name} moved to prep`); }
+  else if(t==='used'){ if(it.prep<q){toast('Only '+it.prep+' in prep',true);return;} it.prep-=q; it.used+=q; addLog('used',`${q} ${it.name} used for orders`); }
+  else if(t==='waste'){
+    const avail=it[wasteStage];
+    if(avail<q){ toast(`Only ${avail} in ${wasteStage}`,true); return; }
+    it[wasteStage]-=q; it.waste+=q;
+    addLog('waste',`${q} ${it.name} wasted from ${wasteStage}`);
+  }
+  cacheLocal(); pushItem(it); renderStock(); renderReconcile(); renderLog();
+  closeModal('move-modal'); toast(it.name+' updated');
+};
+
+/* ---------------- RECONCILE ---------------- */
+function renderReconcile(){
+  const si=$('#sales-inputs'); si.innerHTML='';
+  if(!recipes.length){ si.innerHTML='<div class="muted">Add menu items under Recipes first.</div>'; }
+  recipes.forEach(r=>{
+    const row=el('div','recon-row');
+    row.innerHTML=`<div class="recon-name">${r.name}<small>${ingList(r)}</small></div>`;
+    const inp=el('input','sales-in'); inp.type='number'; inp.inputMode='numeric'; inp.value=sales[r.id]||0; inp.min=0;
+    inp.oninput=()=>{ sales[r.id]=Math.max(0,parseInt(inp.value)||0); cacheLocal(); pushSale(r.id,sales[r.id]); computeRecon(); };
+    const cell=el('div'); cell.style.gridColumn='2 / span 3'; cell.style.textAlign='right'; cell.appendChild(inp);
+    row.appendChild(cell); si.appendChild(row);
+  });
+  computeRecon();
+}
+function ingList(r){ return Object.entries(r.ing).map(([k,v])=>{const it=findItem(k);return v+'× '+(it?it.name:k);}).join(', '); }
+function computeRecon(){
+  const expected={};
+  recipes.forEach(r=>{ const sold=sales[r.id]||0; Object.entries(r.ing).forEach(([k,v])=>{expected[k]=(expected[k]||0)+v*sold;}); });
+  const rr=$('#recon-rows'); rr.innerHTML='';
+  let allMatch=true,totalSold=0,totalExp=0;
+  recipes.forEach(r=>totalSold+=sales[r.id]||0);
+  items.forEach(it=>{
+    const exp=expected[it.id]||0, logged=it.used;
+    if(exp===0&&logged===0) return;
+    totalExp+=exp;
+    const diff=logged-exp; if(diff!==0)allMatch=false;
+    const row=el('div','recon-row');
+    row.innerHTML=`<div class="recon-name">${it.name}<small>${it.waste>0?it.waste+' wasted separately':''}</small></div>
+      <div class="pill inv">${exp}</div><div class="pill pos">${logged}</div>
+      <div class="pill diff ${diff===0?'ok':'bad'}">${diff>0?'+':''}${diff}</div>`;
+    rr.appendChild(row);
+  });
+  if(!rr.children.length) rr.appendChild(el('div','muted','No sales entered yet.'));
+  const sm=$('#recon-summary'); sm.innerHTML='';
+  sm.appendChild(el('div','sum',`<div class="k">Menu items sold</div><div class="v">${totalSold}</div>`));
+  const matched=allMatch&&totalExp>0;
+  const cls=totalExp===0?'':(matched?'match':'miss');
+  const txt=totalExp===0?'—':(matched?'Tallied':'Mismatch');
+  sm.appendChild(el('div','sum '+cls,`<div class="k">Reconciliation</div><div class="v">${txt}</div>`));
+}
+
+/* ---------------- RECIPES ---------------- */
+function renderRecipes(){
+  const w=$('#recipe-list'); w.innerHTML='';
+  if(!recipes.length){ w.innerHTML='<div class="muted">No menu items yet.</div>'; return; }
+  recipes.forEach(r=>{
+    const d=el('div','recipe');
+    let ings=Object.entries(r.ing).map(([k,v])=>{const it=findItem(k);return `<div class="recipe-ing">↳ <b>${v}</b> ${it?it.name:k} ${it?'('+it.unit+')':''}</div>`;}).join('');
+    d.innerHTML=`<div class="recipe-name">${r.name}<span style="float:right;font-size:12px;color:var(--ink-faint);cursor:pointer" onclick="delRecipe('${r.id}')">remove</span></div>${ings}`;
+    w.appendChild(d);
+  });
+}
+function delRecipe(id){ recipes=recipes.filter(r=>r.id!==id); delete sales[id]; cacheLocal(); delRecipeCloud(id); renderRecipes(); renderReconcile(); }
+function openRecipeModal(){
+  $('#rc-name').value='';
+  const box=$('#rc-ingredients'); box.innerHTML='';
+  if(!items.length){ box.innerHTML='<div class="hint">Add ingredients first (Stock tab).</div>'; }
+  items.forEach(it=>{ box.innerHTML+=`<label class="fld">${it.name} (${it.unit}) per serving</label><input class="txt rc-ing" data-id="${it.id}" type="number" inputmode="numeric" value="0" min="0">`; });
+  openModal('recipe-modal');
+}
+function saveRecipe(){
+  const name=$('#rc-name').value.trim(); if(!name){toast('Name required',true);return;}
+  const ing={}; document.querySelectorAll('.rc-ing').forEach(i=>{const v=parseInt(i.value)||0;if(v>0)ing[i.dataset.id]=v;});
+  if(!Object.keys(ing).length){toast('Set at least one ingredient',true);return;}
+  const r={id:slug(name),name,ing}; recipes.push(r);
+  cacheLocal(); pushRecipe(r); renderRecipes(); renderReconcile(); closeModal('recipe-modal'); toast('Menu item saved');
+}
+
+/* ---------------- ITEMS ---------------- */
+function openItemModal(){ $('#it-name').value=''; $('#it-unit').value=''; $('#it-low').value=5; openModal('item-modal'); }
+function saveItem(){
+  const name=$('#it-name').value.trim(), unit=$('#it-unit').value.trim()||'unit';
+  if(!name){toast('Name required',true);return;}
+  const it={id:slug(name),name,unit,low:parseInt($('#it-low').value)||5,storage:0,prep:0,used:0,waste:0};
+  items.push(it); cacheLocal(); pushItem(it); renderStock(); closeModal('item-modal'); toast(name+' added');
+}
+
+/* ---------------- LOG ---------------- */
+function renderLog(){
+  const w=$('#log-list'); w.innerHTML='';
+  $('#log-count').textContent = log.length?log.length+' recent movements':'No movements yet';
+  if(!log.length){ w.innerHTML='<div class="muted">Movements appear here as you receive, prep, use and waste stock. Counts run continuously — no daily reset.</div>'; return; }
+  log.slice(0,80).forEach(l=>{
+    const r=el('div','logrow');
+    r.innerHTML=`<span class="t">${l.t}</span><span class="m">${l.msg}</span><span class="tag ${l.type}">${l.type}</span>`;
+    w.appendChild(r);
+  });
+}
+
+/* ---------------- UTIL ---------------- */
+function openModal(id){$('#'+id).classList.add('open');}
+function closeModal(id){$('#'+id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); $('#view-'+t.dataset.view).classList.add('active');
+});
+
+function renderAll(){ renderStock(); renderReconcile(); renderRecipes(); renderLog(); }
+setStatus(CLOUD?'offline':'local');
+renderAll();
+if(CLOUD){ cloudPullAll().then(subscribeRealtime); }
+</script>
+</body>
+</html>
