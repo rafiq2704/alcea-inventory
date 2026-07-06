@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Alcea.Inventory — Stock Flow</title>
+
+<!-- PWA / installable app -->
+<meta name="theme-color" content="#123c2c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Alcea">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -41,11 +52,60 @@
     letter-spacing:4px;line-height:1;color:var(--ink)}
   .brand .sub{font-family:'Jost',sans-serif;display:block;font-size:9px;font-weight:500;
     letter-spacing:5px;color:var(--gold);margin-top:2px}
+  .head-right{display:flex;align-items:center;gap:12px}
   .status{font-size:11px;color:var(--ink-dim);letter-spacing:.5px;display:flex;align-items:center;gap:6px}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint)}
   .dot.online{background:var(--good);box-shadow:0 0 8px var(--good)}
   .dot.offline{background:var(--warn)}
   .dot.error{background:var(--bad)}
+  .lockbtn{background:transparent;border:1px solid var(--line);color:var(--ink-faint);
+    width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s}
+  .lockbtn:active{transform:scale(.94)}
+  body.admin .lockbtn{color:var(--gold);border-color:var(--gold)}
+
+  /* admin-only elements hidden until unlocked */
+  .admin-only{display:none !important}
+  body.admin .admin-only{display:flex !important}
+  body.admin .tab.admin-only{display:block !important}
+  .admin-badge{display:none}
+  body.admin .admin-badge{display:inline-block;font-size:9px;letter-spacing:2px;color:var(--gold);
+    border:1px solid var(--gold);border-radius:20px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+
+  /* editable count fields in admin */
+  .stage.editable{cursor:text;outline:1px dashed var(--gold);outline-offset:-1px}
+  .stage.editable .val{color:var(--gold) !important}
+  .edit-input{width:100%;font-size:22px;font-weight:800;text-align:center;background:var(--panel);
+    border:1px solid var(--gold);border-radius:8px;color:var(--gold);padding:2px;-moz-appearance:textfield}
+  .edit-input::-webkit-outer-spin-button,.edit-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .del-x{font-size:12px;color:var(--ink-faint);cursor:pointer;padding:4px 8px;border:1px solid var(--line);border-radius:8px}
+  body:not(.admin) .del-x{display:none}
+
+  /* PIN pad */
+  .pin-dots{display:flex;justify-content:center;gap:14px;margin:18px 0 22px}
+  .pin-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--ink-faint);transition:.15s}
+  .pin-dot.filled{background:var(--gold);border-color:var(--gold)}
+  .pin-dot.err{border-color:var(--bad);animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .pin-key{padding:18px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--ink);font-size:24px;font-weight:600;cursor:pointer;transition:.1s}
+  .pin-key:active{transform:scale(.95);background:var(--panel)}
+  .pin-key.wide{grid-column:span 1;font-size:15px;color:var(--ink-dim)}
+
+  /* daily view */
+  .date-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .date-bar input[type=date]{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel-2);color:var(--ink);font-size:15px;font-family:inherit}
+  .date-nav{width:44px;padding:11px 0;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-size:18px;cursor:pointer}
+  .seg{display:flex;gap:6px;margin-bottom:12px}
+  .seg button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);font-weight:600;font-size:13px;cursor:pointer;letter-spacing:.5px}
+  .seg button.on{border-color:var(--gold);color:var(--gold);background:var(--panel-2)}
+  .day-grid{display:grid;grid-template-columns:1fr repeat(4,auto);gap:6px 10px;align-items:center;font-size:14px}
+  .day-grid .dh{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);text-align:center}
+  .day-grid .nm{font-weight:600}
+  .day-grid .c{text-align:center;font-weight:700;min-width:34px}
+  .c.recv{color:var(--storage)} .c.prp{color:var(--prep)} .c.usd{color:var(--used)} .c.wst{color:var(--waste)}
+  .day-grid .c.zero{color:var(--ink-faint);font-weight:400}
 
   .tabs{display:flex;gap:6px;position:sticky;top:56px;z-index:19;background:var(--bg);padding:6px 0 12px;flex-wrap:wrap}
   .tab{flex:1;min-width:88px;padding:11px 8px;border:1px solid var(--line);background:var(--panel);
@@ -115,6 +175,7 @@
   .tag.prep{background:rgba(244,185,66,.14);color:var(--prep)}
   .tag.used{background:rgba(95,211,154,.14);color:var(--used)}
   .tag.waste{background:rgba(232,96,93,.14);color:var(--waste)}
+  .tag.adjust{background:rgba(200,160,78,.16);color:var(--gold-soft)}
 
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
   .modal-bg.open{display:flex}
@@ -170,16 +231,21 @@
       <path d="M26 34 V20 a5 5 0 0 1 5-5 a5 5 0 0 1 5 5 V34"/>
       <line x1="2" y1="34" x2="38" y2="34"/>
     </svg>
-    <div class="brand">ALCEA<span class="sub">INVENTORY</span></div>
+    <div class="brand">ALCEA<span class="sub" id="brand-sub">INVENTORY</span></div>
   </div>
-  <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">local</span></div>
+  <div class="head-right">
+    <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">local</span></div>
+    <button class="lockbtn" id="lockbtn" onclick="toggleAdmin()" title="Admin">
+      <svg viewBox="0 0 24 24" width="18" height="18" id="lockicon"><path id="shackle" d="M6 10V8a6 6 0 0 1 12 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="4" y="10" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+  </div>
 </header>
 
-<div class="tabs">
+<div class="tabs" id="tabs">
   <div class="tab active" data-view="stock">STOCK</div>
-  <div class="tab" data-view="reconcile">RECONCILE</div>
-  <div class="tab" data-view="recipes">RECIPES</div>
-  <div class="tab" data-view="log">LOG</div>
+  <div class="tab admin-only" data-view="reconcile">RECONCILE</div>
+  <div class="tab admin-only" data-view="recipes">RECIPES</div>
+  <div class="tab admin-only" data-view="log">LOG</div>
 </div>
 
 <div class="view active" id="view-stock">
@@ -189,20 +255,33 @@
 
 <div class="view" id="view-reconcile">
   <div class="card">
-    <h3>End of day check</h3>
-    <div class="muted">Enter what the POS sold. Larder converts each sale into ingredients used and compares it against what inventory recorded as used. A mismatch means unlogged usage, waste, or theft.</div>
+    <h3>Daily check</h3>
+    <div class="muted">Pick a day, enter what the POS sold that day. The app converts sales into ingredients and compares against what was logged as <em>used</em> on that same day. A mismatch means unlogged usage, extra waste, or shrinkage.</div>
+    <div class="date-bar" style="margin-top:12px">
+      <button class="date-nav" onclick="shiftDate(-1)">‹</button>
+      <input type="date" id="recon-date" onchange="onDateChange()">
+      <button class="date-nav" onclick="shiftDate(1)">›</button>
+    </div>
+    <button class="btn btn-ghost" style="width:100%" onclick="setToday()">Today</button>
   </div>
+
+  <div class="card">
+    <h3>Daily usage <span id="day-label" style="font-size:13px;color:var(--ink-dim);font-family:Jost"></span></h3>
+    <div class="muted" style="margin-bottom:12px">Movements logged on this day, per ingredient.</div>
+    <div class="day-grid" id="day-usage"></div>
+  </div>
+
   <div class="card">
     <h3>Sales from POS</h3>
-    <div class="muted" style="margin-bottom:10px">Type the quantity sold for each menu item.</div>
+    <div class="muted" style="margin-bottom:10px">Quantity of each menu item sold on the selected day.</div>
     <div id="sales-inputs"></div>
   </div>
   <div class="card"><div class="summary-grid" id="recon-summary"></div></div>
   <div class="card">
-    <h3>Ingredient reconciliation</h3>
-    <div class="recon-head"><span>Ingredient</span><span>Expected</span><span>Logged</span><span>Diff</span></div>
+    <h3>Reconciliation</h3>
+    <div class="recon-head"><span>Ingredient</span><span>Expected</span><span>Used</span><span>Diff</span></div>
     <div id="recon-rows"></div>
-    <div class="hint">Expected = ingredients implied by POS sales. Logged = total marked "used". Diff of 0 means tallied. Waste is tracked separately and shown per ingredient.</div>
+    <div class="hint">Expected = ingredients implied by that day's POS sales. Used = amount logged as used that day. Diff of 0 = tallied. Waste is tracked separately per ingredient.</div>
   </div>
 </div>
 
@@ -274,6 +353,46 @@
   </div>
 </div>
 
+<!-- PIN pad -->
+<div class="modal-bg" id="pin-modal">
+  <div class="modal">
+    <h3 id="pin-title">Admin access</h3>
+    <div class="muted" id="pin-sub">Enter the 4-digit PIN to unlock reconciliation, recipes, logs and count editing.</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-grid">
+      <div class="pin-key" onclick="pinPress('1')">1</div>
+      <div class="pin-key" onclick="pinPress('2')">2</div>
+      <div class="pin-key" onclick="pinPress('3')">3</div>
+      <div class="pin-key" onclick="pinPress('4')">4</div>
+      <div class="pin-key" onclick="pinPress('5')">5</div>
+      <div class="pin-key" onclick="pinPress('6')">6</div>
+      <div class="pin-key" onclick="pinPress('7')">7</div>
+      <div class="pin-key" onclick="pinPress('8')">8</div>
+      <div class="pin-key" onclick="pinPress('9')">9</div>
+      <div class="pin-key wide" onclick="closeModal('pin-modal')">Cancel</div>
+      <div class="pin-key" onclick="pinPress('0')">0</div>
+      <div class="pin-key wide" onclick="pinBack()">⌫</div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin settings modal -->
+<div class="modal-bg" id="admin-modal">
+  <div class="modal">
+    <h3>Admin settings</h3>
+    <div class="muted">You're in admin mode. Manage the PIN and menu items here. Tap any count on the Stock tab to correct it.</div>
+    <label class="fld">Change PIN (4 digits)</label>
+    <input class="txt" id="new-pin" type="tel" maxlength="4" inputmode="numeric" placeholder="e.g. 4337">
+    <button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="changePin()">Update PIN</button>
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="closeModal('admin-modal')">Close</button>
+      <button class="btn waste" onclick="lockAdmin()">Lock admin</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -283,8 +402,8 @@
    the setup guide in the Supabase SQL editor once.
    Leave both blank to run local-only (localStorage) for testing.
    ============================================================ */
-const SUPABASE_URL = "https://eebzzaanyscirgcjqphq.supabase.co";       // e.g. https://abcd.supabase.co
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlYnp6YWFueXNjaXJnY2pxcGhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDAxNzMsImV4cCI6MjA5ODg3NjE3M30.t6GEXV_HQiyfw8NK1rROtLSg--aKEu7ZbffN9hPEiK4";  // your anon / public key
+const SUPABASE_URL = "";       // e.g. https://abcd.supabase.co
+const SUPABASE_ANON_KEY = "";  // your anon / public key
 /* ============================================================ */
 
 let sb=null, CLOUD=false;
@@ -295,6 +414,8 @@ if(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase){
 
 const LS={ load(k,f){try{const v=localStorage.getItem('larder_'+k);return v?JSON.parse(v):f;}catch(e){return f;}}, save(k,v){localStorage.setItem('larder_'+k,JSON.stringify(v));} };
 
+const DEFAULT_PIN = "4337";
+
 let items = LS.load('items',[
   { id:'egg', name:'Egg', unit:'egg', low:6, storage:0, prep:0, used:0, waste:0 },
   { id:'chicken', name:'Chicken', unit:'piece', low:4, storage:0, prep:0, used:0, waste:0 }
@@ -303,10 +424,33 @@ let recipes = LS.load('recipes',[
   { id:'scramble', name:'Scramble Egg', ing:{ egg:2 } },
   { id:'grilledchx', name:'Grilled Chicken', ing:{ chicken:1 } }
 ]);
-let log = LS.load('log',[]);
-let sales = LS.load('sales',{});
+let log = LS.load('log',[]);              // each: {type,msg,t,iso,itemId,qty}
+let sales = LS.load('sales',{});          // sales[YYYY-MM-DD][recipe_id] = qty
+let settings = LS.load('settings',{ pin: DEFAULT_PIN });
 
-function cacheLocal(){ LS.save('items',items); LS.save('recipes',recipes); LS.save('log',log); LS.save('sales',sales); }
+/* migrate old flat sales {recipe_id:qty} -> per-day under today */
+(function migrateSales(){
+  const keys=Object.keys(sales);
+  const looksDated = keys.every(k=>/^\d{4}-\d{2}-\d{2}$/.test(k));
+  if(keys.length && !looksDated){
+    const t=todayKey(); const moved={}; moved[t]={...sales}; sales=moved;
+  }
+})();
+if(!settings.pin) settings.pin=DEFAULT_PIN;
+
+let ADMIN = false;                        // admin unlocked this session
+let selDate = todayKey();                 // selected day on reconcile tab
+
+function cacheLocal(){ LS.save('items',items); LS.save('recipes',recipes); LS.save('log',log); LS.save('sales',sales); LS.save('settings',settings); }
+
+/* ---- date helpers (local midnight boundaries) ---- */
+function todayKey(){ return dateKey(new Date()); }
+function dateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function keyToDate(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+function prettyDate(k){ const d=keyToDate(k); const t=todayKey();
+  if(k===t) return 'Today'; const yd=dateKey(new Date(Date.now()-864e5)); if(k===yd) return 'Yesterday';
+  return d.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'}); }
+function isoDateKey(iso){ const d=new Date(iso); return dateKey(d); }
 
 function setStatus(state){
   const dot=$('#dot'), txt=$('#statusTxt');
@@ -325,37 +469,42 @@ function slug(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'')+Math.random().t
 async function cloudPullAll(){
   if(!CLOUD){ setStatus('local'); return; }
   try{
-    const [it,rc,mv,sl] = await Promise.all([
+    const [it,rc,mv,sl,st] = await Promise.all([
       sb.from('items').select('*').order('created_at'),
       sb.from('recipes').select('*').order('created_at'),
-      sb.from('movements').select('*').order('created_at',{ascending:false}).limit(100),
-      sb.from('sales').select('*')
+      sb.from('movements').select('*').order('created_at',{ascending:false}).limit(500),
+      sb.from('sales').select('*'),
+      sb.from('settings').select('*').eq('id',1).maybeSingle()
     ]);
     if(it.error||rc.error||mv.error||sl.error) throw (it.error||rc.error||mv.error||sl.error);
     if(it.data&&it.data.length) items=it.data.map(r=>({id:r.id,name:r.name,unit:r.unit,low:r.low,storage:r.storage,prep:r.prep,used:r.used,waste:r.waste}));
     else if(items.length) for(const i of items) await sb.from('items').upsert(i);
     if(rc.data&&rc.data.length) recipes=rc.data.map(r=>({id:r.id,name:r.name,ing:r.ing}));
     else if(recipes.length) for(const r of recipes) await sb.from('recipes').upsert(r);
-    log=(mv.data||[]).map(r=>({type:r.type,msg:r.msg,t:new Date(r.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}));
-    sales={}; (sl.data||[]).forEach(r=>{sales[r.recipe_id]=r.qty;});
+    log=(mv.data||[]).map(r=>({type:r.type,msg:r.msg,iso:r.created_at,itemId:r.item_id||undefined,qty:r.qty||undefined,t:new Date(r.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}));
+    sales={}; (sl.data||[]).forEach(r=>{ const d=r.date||todayKey(); (sales[d]=sales[d]||{})[r.recipe_id]=r.qty; });
+    if(st&&st.data&&st.data.pin) settings.pin=st.data.pin;
+    else if(CLOUD) await sb.from('settings').upsert({id:1,pin:settings.pin});
     cacheLocal(); setStatus('online'); renderAll();
   }catch(e){ console.error(e); setStatus('error'); toast('Cloud read failed — using local',true); }
 }
 async function pushItem(it){ if(!CLOUD)return; const {error}=await sb.from('items').upsert(it); if(error){setStatus('error');toast('Sync failed — saved locally',true);}else setStatus('online'); }
 async function pushRecipe(r){ if(!CLOUD)return; const {error}=await sb.from('recipes').upsert(r); if(error)setStatus('error');else setStatus('online'); }
 async function delRecipeCloud(id){ if(!CLOUD)return; await sb.from('recipes').delete().eq('id',id); await sb.from('sales').delete().eq('recipe_id',id); }
-async function pushSale(recipe_id,qty){ if(!CLOUD)return; const {error}=await sb.from('sales').upsert({recipe_id,qty}); if(error)setStatus('error');else setStatus('online'); }
-async function pushMovement(type,msg){ if(!CLOUD)return; await sb.from('movements').insert({type,msg}); }
+async function pushSale(date,recipe_id,qty){ if(!CLOUD)return; const {error}=await sb.from('sales').upsert({date,recipe_id,qty},{onConflict:'date,recipe_id'}); if(error)setStatus('error');else setStatus('online'); }
+async function pushMovement(type,msg,meta){ if(!CLOUD)return; await sb.from('movements').insert({type,msg,item_id:meta&&meta.itemId||null,qty:meta&&meta.qty||null}); }
+async function pushSettings(){ if(!CLOUD)return; await sb.from('settings').upsert({id:1,pin:settings.pin}); }
 
 function subscribeRealtime(){
   if(!CLOUD)return;
-  sb.channel('larder-live')
+  sb.channel('alcea-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'items'},cloudPullAll)
     .on('postgres_changes',{event:'*',schema:'public',table:'movements'},cloudPullAll)
     .on('postgres_changes',{event:'*',schema:'public',table:'sales'},cloudPullAll)
+    .on('postgres_changes',{event:'*',schema:'public',table:'settings'},cloudPullAll)
     .subscribe();
 }
-function addLog(type,msg){ log.unshift({type,msg,t:nowTime()}); cacheLocal(); pushMovement(type,msg); }
+function addLog(type,msg,meta){ const iso=new Date().toISOString(); const e={type,msg,iso,t:nowTime(),...(meta||{})}; log.unshift(e); cacheLocal(); pushMovement(type,msg,meta); }
 
 /* ---------------- STOCK ---------------- */
 function renderStock(){
@@ -369,14 +518,25 @@ function renderStock(){
     let flag='';
     if(it.storage<=0) flag='<span class="flag out"></span>';
     else if(it.storage<=it.low) flag='<span class="flag low"></span>';
+    const ed = ADMIN?' editable':'';
+    const cell=(stage,label,val,arrow)=>`
+      <div class="stage s-${stage}${ed}" ${ADMIN?`onclick="editCount(event,'${it.id}','${stage}')"`:''}>
+        <div class="lbl">${label}</div><div class="val">${val}</div>${arrow?'<div class="arrow">→</div>':''}
+      </div>`;
     card.innerHTML=`
-      <div class="item-top"><div class="item-name">${flag}${it.name} <span class="unit">/ ${it.unit}</span></div></div>
-      <div class="flow">
-        <div class="stage s-storage"><div class="lbl">Storage</div><div class="val">${it.storage}</div><div class="arrow">→</div></div>
-        <div class="stage s-prep"><div class="lbl">Prep / Kitchen</div><div class="val">${it.prep}</div><div class="arrow">→</div></div>
-        <div class="stage s-used"><div class="lbl">Used</div><div class="val">${it.used}</div></div>
+      <div class="item-top">
+        <div class="item-name">${flag}${it.name} <span class="unit">/ ${it.unit}</span></div>
+        <span class="del-x" onclick="delItem('${it.id}')">remove</span>
       </div>
-      <div class="waste-line"><span class="muted">Wasted (all stages)</span><span class="w">${it.waste} ${it.unit}${it.waste===1?'':'s'}</span></div>
+      <div class="flow">
+        ${cell('storage','Storage',it.storage,true)}
+        ${cell('prep','Prep / Kitchen',it.prep,true)}
+        ${cell('used','Used',it.used,false)}
+      </div>
+      <div class="waste-line">
+        <span class="muted">Wasted (all stages)</span>
+        <span class="w${ADMIN?' editable':''}" ${ADMIN?`onclick="editCount(event,'${it.id}','waste')"`:''} style="${ADMIN?'outline:1px dashed var(--waste);outline-offset:3px;border-radius:6px;padding:2px 6px':''}">${it.waste} ${it.unit}${it.waste===1?'':'s'}</span>
+      </div>
       <div class="actrow">
         <button class="btn receive" onclick="move('${it.id}','receive')">＋ Receive</button>
         <button class="btn prep" onclick="move('${it.id}','prep')">→ Prep</button>
@@ -385,6 +545,41 @@ function renderStock(){
       </div>`;
     wrap.appendChild(card);
   });
+}
+
+/* ---- admin: inline count editing ---- */
+function editCount(ev, id, stage){
+  if(!ADMIN) return;
+  ev.stopPropagation();
+  const it=findItem(id);
+  const cur=it[stage];
+  const target=ev.currentTarget;
+  const valEl=target.querySelector('.val')||target;
+  const input=el('input','edit-input'); input.type='number'; input.value=cur; input.inputMode='numeric';
+  const prev=valEl.innerHTML; valEl.innerHTML=''; valEl.appendChild(input); input.focus(); input.select();
+  const commit=()=>{
+    const nv=Math.max(0,parseInt(input.value)||0);
+    if(nv!==cur){
+      it[stage]=nv;
+      addLog('adjust',`${it.name} ${stage} corrected ${cur} → ${nv} (admin)`);
+      cacheLocal(); pushItem(it);
+      renderStock(); renderReconcile(); renderLog();
+      toast(`${it.name} ${stage} set to ${nv}`);
+    } else { valEl.innerHTML=prev; }
+  };
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter')input.blur(); if(e.key==='Escape'){input.value=cur;input.blur();} });
+}
+function delItem(id){
+  if(!ADMIN) return;
+  const it=findItem(id);
+  if(!confirm(`Remove ingredient "${it.name}"? This also removes it from any recipes. Movement history stays in the log.`)) return;
+  items=items.filter(i=>i.id!==id);
+  recipes.forEach(r=>{ if(r.ing[id]){ delete r.ing[id]; pushRecipe(r); } });
+  cacheLocal(); if(CLOUD) sb.from('items').delete().eq('id',id);
+  addLog('adjust',`Ingredient ${it.name} removed (admin)`);
+  renderStock(); renderRecipes(); renderReconcile();
+  toast(it.name+' removed');
 }
 
 /* ---------------- MOVE MODAL ---------------- */
@@ -425,54 +620,94 @@ $('#mm-confirm').onclick=()=>{
   const it=findItem(pending.id);
   const q=Math.max(1,parseInt($('#mm-qty').value)||0);
   const t=pending.type;
-  if(t==='receive'){ it.storage+=q; addLog('receive',`+${q} ${it.name} received into storage`); }
-  else if(t==='prep'){ if(it.storage<q){toast('Only '+it.storage+' in storage',true);return;} it.storage-=q; it.prep+=q; addLog('prep',`${q} ${it.name} moved to prep`); }
-  else if(t==='used'){ if(it.prep<q){toast('Only '+it.prep+' in prep',true);return;} it.prep-=q; it.used+=q; addLog('used',`${q} ${it.name} used for orders`); }
+  const meta={itemId:it.id,qty:q};
+  if(t==='receive'){ it.storage+=q; addLog('receive',`+${q} ${it.name} received into storage`,meta); }
+  else if(t==='prep'){ if(it.storage<q){toast('Only '+it.storage+' in storage',true);return;} it.storage-=q; it.prep+=q; addLog('prep',`${q} ${it.name} moved to prep`,meta); }
+  else if(t==='used'){ if(it.prep<q){toast('Only '+it.prep+' in prep',true);return;} it.prep-=q; it.used+=q; addLog('used',`${q} ${it.name} used for orders`,meta); }
   else if(t==='waste'){
     const avail=it[wasteStage];
     if(avail<q){ toast(`Only ${avail} in ${wasteStage}`,true); return; }
     it[wasteStage]-=q; it.waste+=q;
-    addLog('waste',`${q} ${it.name} wasted from ${wasteStage}`);
+    addLog('waste',`${q} ${it.name} wasted from ${wasteStage}`,meta);
   }
   cacheLocal(); pushItem(it); renderStock(); renderReconcile(); renderLog();
   closeModal('move-modal'); toast(it.name+' updated');
 };
 
-/* ---------------- RECONCILE ---------------- */
+/* ---------------- RECONCILE (per selected day) ---------------- */
+function onDateChange(){ selDate=$('#recon-date').value||todayKey(); renderReconcile(); }
+function shiftDate(delta){ const d=keyToDate(selDate); d.setDate(d.getDate()+delta); if(dateKey(d)>todayKey()) return; selDate=dateKey(d); renderReconcile(); }
+function setToday(){ selDate=todayKey(); renderReconcile(); }
+
+/* sum movements of a given type per item on a given day */
+function dayUsage(dayKey){
+  const agg={}; // itemId -> {receive,prep,used,waste}
+  items.forEach(it=>agg[it.id]={receive:0,prep:0,used:0,waste:0});
+  log.forEach(e=>{
+    if(!e.iso || !e.itemId || !e.qty) return;
+    if(isoDateKey(e.iso)!==dayKey) return;
+    if(agg[e.itemId] && agg[e.itemId][e.type]!==undefined) agg[e.itemId][e.type]+=e.qty;
+  });
+  return agg;
+}
+
 function renderReconcile(){
+  const di=$('#recon-date'); if(di) di.value=selDate;
+  const dl=$('#day-label'); if(dl) dl.textContent='· '+prettyDate(selDate);
+
+  // daily usage grid
+  const agg=dayUsage(selDate);
+  const grid=$('#day-usage'); grid.innerHTML=
+    `<div class="dh" style="text-align:left">Item</div><div class="dh">Recv</div><div class="dh">Prep</div><div class="dh">Used</div><div class="dh">Waste</div>`;
+  let anyMove=false;
+  items.forEach(it=>{
+    const a=agg[it.id];
+    if(a.receive||a.prep||a.used||a.waste) anyMove=true;
+    const c=(v,cls)=>`<div class="c ${cls} ${v?'':'zero'}">${v||'·'}</div>`;
+    grid.innerHTML+=`<div class="nm">${it.name}</div>${c(a.receive,'recv')}${c(a.prep,'prp')}${c(a.used,'usd')}${c(a.waste,'wst')}`;
+  });
+  if(!anyMove) grid.innerHTML+=`<div class="muted" style="grid-column:1/-1;padding-top:8px">No movements logged on ${prettyDate(selDate).toLowerCase()}.</div>`;
+
+  // sales inputs for the day
+  const daySales = sales[selDate] || {};
   const si=$('#sales-inputs'); si.innerHTML='';
   if(!recipes.length){ si.innerHTML='<div class="muted">Add menu items under Recipes first.</div>'; }
   recipes.forEach(r=>{
     const row=el('div','recon-row');
     row.innerHTML=`<div class="recon-name">${r.name}<small>${ingList(r)}</small></div>`;
-    const inp=el('input','sales-in'); inp.type='number'; inp.inputMode='numeric'; inp.value=sales[r.id]||0; inp.min=0;
-    inp.oninput=()=>{ sales[r.id]=Math.max(0,parseInt(inp.value)||0); cacheLocal(); pushSale(r.id,sales[r.id]); computeRecon(); };
+    const inp=el('input','sales-in'); inp.type='number'; inp.inputMode='numeric'; inp.value=daySales[r.id]||0; inp.min=0;
+    inp.oninput=()=>{ (sales[selDate]=sales[selDate]||{})[r.id]=Math.max(0,parseInt(inp.value)||0); cacheLocal(); pushSale(selDate,r.id,sales[selDate][r.id]); computeRecon(); };
     const cell=el('div'); cell.style.gridColumn='2 / span 3'; cell.style.textAlign='right'; cell.appendChild(inp);
     row.appendChild(cell); si.appendChild(row);
   });
   computeRecon();
 }
 function ingList(r){ return Object.entries(r.ing).map(([k,v])=>{const it=findItem(k);return v+'× '+(it?it.name:k);}).join(', '); }
+
 function computeRecon(){
+  const daySales = sales[selDate] || {};
+  const agg = dayUsage(selDate);
   const expected={};
-  recipes.forEach(r=>{ const sold=sales[r.id]||0; Object.entries(r.ing).forEach(([k,v])=>{expected[k]=(expected[k]||0)+v*sold;}); });
+  recipes.forEach(r=>{ const sold=daySales[r.id]||0; Object.entries(r.ing).forEach(([k,v])=>{expected[k]=(expected[k]||0)+v*sold;}); });
   const rr=$('#recon-rows'); rr.innerHTML='';
   let allMatch=true,totalSold=0,totalExp=0;
-  recipes.forEach(r=>totalSold+=sales[r.id]||0);
+  recipes.forEach(r=>totalSold+=daySales[r.id]||0);
   items.forEach(it=>{
-    const exp=expected[it.id]||0, logged=it.used;
-    if(exp===0&&logged===0) return;
+    const exp=expected[it.id]||0;
+    const usedToday=agg[it.id]?agg[it.id].used:0;
+    const wasteToday=agg[it.id]?agg[it.id].waste:0;
+    if(exp===0&&usedToday===0) return;
     totalExp+=exp;
-    const diff=logged-exp; if(diff!==0)allMatch=false;
+    const diff=usedToday-exp; if(diff!==0)allMatch=false;
     const row=el('div','recon-row');
-    row.innerHTML=`<div class="recon-name">${it.name}<small>${it.waste>0?it.waste+' wasted separately':''}</small></div>
-      <div class="pill inv">${exp}</div><div class="pill pos">${logged}</div>
+    row.innerHTML=`<div class="recon-name">${it.name}<small>${wasteToday>0?wasteToday+' wasted today':''}</small></div>
+      <div class="pill inv">${exp}</div><div class="pill pos">${usedToday}</div>
       <div class="pill diff ${diff===0?'ok':'bad'}">${diff>0?'+':''}${diff}</div>`;
     rr.appendChild(row);
   });
-  if(!rr.children.length) rr.appendChild(el('div','muted','No sales entered yet.'));
+  if(!rr.children.length) rr.appendChild(el('div','muted','No sales or usage recorded for this day yet.'));
   const sm=$('#recon-summary'); sm.innerHTML='';
-  sm.appendChild(el('div','sum',`<div class="k">Menu items sold</div><div class="v">${totalSold}</div>`));
+  sm.appendChild(el('div','sum',`<div class="k">Sold ${prettyDate(selDate)}</div><div class="v">${totalSold}</div>`));
   const matched=allMatch&&totalExp>0;
   const cls=totalExp===0?'':(matched?'match':'miss');
   const txt=totalExp===0?'—':(matched?'Tallied':'Mismatch');
@@ -490,7 +725,7 @@ function renderRecipes(){
     w.appendChild(d);
   });
 }
-function delRecipe(id){ recipes=recipes.filter(r=>r.id!==id); delete sales[id]; cacheLocal(); delRecipeCloud(id); renderRecipes(); renderReconcile(); }
+function delRecipe(id){ recipes=recipes.filter(r=>r.id!==id); Object.keys(sales).forEach(d=>{ if(sales[d]) delete sales[d][id]; }); cacheLocal(); delRecipeCloud(id); renderRecipes(); renderReconcile(); }
 function openRecipeModal(){
   $('#rc-name').value='';
   const box=$('#rc-ingredients'); box.innerHTML='';
@@ -515,32 +750,109 @@ function saveItem(){
   items.push(it); cacheLocal(); pushItem(it); renderStock(); closeModal('item-modal'); toast(name+' added');
 }
 
-/* ---------------- LOG ---------------- */
+/* ---------------- LOG (grouped by day) ---------------- */
 function renderLog(){
   const w=$('#log-list'); w.innerHTML='';
-  $('#log-count').textContent = log.length?log.length+' recent movements':'No movements yet';
+  $('#log-count').textContent = log.length?log.length+' movements recorded':'No movements yet';
   if(!log.length){ w.innerHTML='<div class="muted">Movements appear here as you receive, prep, use and waste stock. Counts run continuously — no daily reset.</div>'; return; }
-  log.slice(0,80).forEach(l=>{
+  let lastDay=null;
+  log.slice(0,200).forEach(l=>{
+    const day = l.iso?isoDateKey(l.iso):todayKey();
+    if(day!==lastDay){
+      lastDay=day;
+      const h=el('div',null,prettyDate(day));
+      h.style.cssText='font-family:Cormorant Garamond,serif;color:var(--gold-soft);font-size:16px;font-weight:600;margin:14px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--line)';
+      w.appendChild(h);
+    }
     const r=el('div','logrow');
     r.innerHTML=`<span class="t">${l.t}</span><span class="m">${l.msg}</span><span class="tag ${l.type}">${l.type}</span>`;
     w.appendChild(r);
   });
 }
 
+/* ---------------- ADMIN / PIN ---------------- */
+let pinBuf='';
+const IDLE_MS = 5*60*1000; // auto-lock after 5 min idle
+let idleTimer=null;
+
+function toggleAdmin(){
+  if(ADMIN){ openModal('admin-modal'); }   // already in — show settings/lock
+  else openPin();
+}
+function openPin(){
+  pinBuf=''; renderPinDots(); openModal('pin-modal');
+}
+function pinPress(n){
+  if(pinBuf.length>=4) return;
+  pinBuf+=n; renderPinDots();
+  if(pinBuf.length===4) setTimeout(checkPin,120);
+}
+function pinBack(){ pinBuf=pinBuf.slice(0,-1); renderPinDots(); }
+function renderPinDots(err){
+  document.querySelectorAll('#pin-dots .pin-dot').forEach((d,i)=>{
+    d.className='pin-dot'+(i<pinBuf.length?' filled':'')+(err?' err':'');
+  });
+}
+function checkPin(){
+  if(pinBuf===String(settings.pin)){ unlockAdmin(); closeModal('pin-modal'); toast('Admin unlocked'); }
+  else { renderPinDots(true); toast('Wrong PIN',true); setTimeout(()=>{pinBuf='';renderPinDots();},400); }
+}
+function unlockAdmin(){
+  ADMIN=true; document.body.classList.add('admin');
+  $('#brand-sub').textContent='ADMIN';
+  bumpIdle();
+  renderStock(); renderReconcile();
+}
+function lockAdmin(){
+  ADMIN=false; document.body.classList.remove('admin');
+  $('#brand-sub').textContent='INVENTORY';
+  closeModal('admin-modal');
+  // if on an admin-only tab, bounce to stock
+  const active=document.querySelector('.view.active');
+  if(active && active.id!=='view-stock') switchTab('stock');
+  renderStock();
+  toast('Admin locked');
+}
+function changePin(){
+  const v=$('#new-pin').value.trim();
+  if(!/^\d{4}$/.test(v)){ toast('PIN must be 4 digits',true); return; }
+  settings.pin=v; cacheLocal(); pushSettings();
+  $('#new-pin').value=''; toast('PIN updated');
+}
+function bumpIdle(){
+  if(!ADMIN) return;
+  clearTimeout(idleTimer);
+  idleTimer=setTimeout(()=>{ if(ADMIN) lockAdmin(); }, IDLE_MS);
+}
+['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,bumpIdle,{passive:true}));
+
 /* ---------------- UTIL ---------------- */
 function openModal(id){$('#'+id).classList.add('open');}
 function closeModal(id){$('#'+id).classList.remove('open');}
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+
+function switchTab(view){
+  // guard: admin-only tabs require admin
+  const tab=document.querySelector(`.tab[data-view="${view}"]`);
+  if(tab && tab.classList.contains('admin-only') && !ADMIN){ openPin(); return; }
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active'); $('#view-'+t.dataset.view).classList.add('active');
-});
+  if(tab) tab.classList.add('active');
+  $('#view-'+view).classList.add('active');
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>switchTab(t.dataset.view));
 
 function renderAll(){ renderStock(); renderReconcile(); renderRecipes(); renderLog(); }
 setStatus(CLOUD?'offline':'local');
 renderAll();
 if(CLOUD){ cloudPullAll().then(subscribeRealtime); }
+
+/* ---------- PWA service worker (enables install + offline shell) ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW skipped',e));
+  });
+}
 </script>
 </body>
 </html>
