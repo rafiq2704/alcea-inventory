@@ -2,10 +2,11 @@
    Caches the app shell so it launches instantly and works if wifi drops.
    Live data still comes from Supabase over the network; this only caches the UI. */
 
-const CACHE = 'alcea-inv-v2';
+const CACHE = 'alcea-inv-v4';
 const SHELL = [
   './',
   './index.html',
+  './app.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
