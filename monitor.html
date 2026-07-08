@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alcea — Kitchen Stock Board</title>
+<meta name="theme-color" content="#0d1f1a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d1f1a;--panel:#123028;--line:#2a5347;
+    --ink:#f3efe2;--ink-dim:#a9bdb1;--ink-faint:#6f8a7c;--gold:#c8a04e;
+    --critical:#e5544e;--warning:#e3b23c;--buy:#e5544e;--prep-ok:#8fc9a3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden}
+  body{
+    background:radial-gradient(120% 90% at 50% -10%, #17392f 0%, var(--bg) 55%), var(--bg);
+    color:var(--ink);font-family:'Jost',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    height:100vh;width:100vw;display:flex;flex-direction:column;
+  }
+
+  /* ---- top bar ---- */
+  .bar{display:flex;align-items:center;justify-content:space-between;
+    padding:1.6vh 2.2vw;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .brand{display:flex;align-items:baseline;gap:.8vw}
+  .brand .word{font-family:'Cormorant Garamond',serif;font-weight:700;
+    font-size:3.4vh;letter-spacing:.18vw;line-height:1}
+  .brand .tag{font-size:1.2vh;letter-spacing:.35vw;color:var(--gold);font-weight:600}
+  .board-title{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;
+    font-size:1.7vh;letter-spacing:.28vw;text-transform:uppercase;color:var(--ink-dim)}
+  .clock{display:flex;align-items:center;gap:1.1vw}
+  .live{display:flex;align-items:center;gap:.5vw;font-size:1.5vh;letter-spacing:.2vw;
+    text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+  .live .pulse{width:1vh;height:1vh;border-radius:50%;background:var(--prep-ok);animation:pulse 2.2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(143,201,163,.5)}70%{box-shadow:0 0 0 1.2vh rgba(143,201,163,0)}100%{box-shadow:0 0 0 0 rgba(143,201,163,0)}}
+  .updated{font-size:1.6vh;color:var(--ink-dim);letter-spacing:.05vw;font-variant-numeric:tabular-nums}
+  .exit{width:4vh;height:4vh;border-radius:1vh;border:1px solid var(--line);background:transparent;
+    color:var(--ink-faint);font-size:2vh;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none}
+
+  /* ---- board fills remaining height ---- */
+  .board{flex:1 1 auto;display:flex;gap:1.4vw;padding:2vh 2.2vw;min-height:0}
+  .col{flex:1 1 0;display:flex;flex-direction:column;min-height:0}
+  .col-head{display:flex;align-items:center;gap:.8vw;margin-bottom:1.4vh;flex:0 0 auto}
+  .col-dot{width:1.4vh;height:1.4vh;border-radius:.3vh;flex:none}
+  .sec-critical .col-dot{background:var(--critical);box-shadow:0 0 1.6vh var(--critical)}
+  .sec-warning .col-dot{background:var(--warning);box-shadow:0 0 1.4vh var(--warning)}
+  .col-title{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;
+    font-size:2.9vh;letter-spacing:.22vw;text-transform:uppercase;line-height:1}
+  .sec-critical .col-title{color:var(--critical)}
+  .sec-warning .col-title{color:var(--warning)}
+  .col-range{font-size:1.5vh;color:var(--ink-faint);letter-spacing:.05vw;font-weight:500;align-self:center}
+  .col-count{margin-left:auto;font-family:'Barlow Semi Condensed',sans-serif;
+    font-size:1.6vh;letter-spacing:.15vw;color:var(--ink-faint);text-transform:uppercase}
+  .col-list{flex:1 1 auto;display:flex;flex-direction:column;gap:1vh;min-height:0}
+
+  /* ---- dish card ---- */
+  .dish{position:relative;display:flex;align-items:center;gap:1.4vw;
+    background:var(--panel);border:1px solid var(--line);border-radius:1.2vh;
+    padding:0 1.6vw;overflow:hidden;flex:1 1 0;min-height:0}
+  .dish::before{content:"";position:absolute;left:0;top:0;bottom:0;width:.6vh}
+  .dish.crit::before{background:var(--critical)}
+  .dish.warn::before{background:var(--warning)}
+  .dish-count{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;
+    font-size:6.4vh;line-height:.82;font-variant-numeric:tabular-nums;
+    min-width:9vh;text-align:center;padding-left:.6vw}
+  .dish.crit .dish-count{color:var(--critical)}
+  .dish.warn .dish-count{color:var(--warning)}
+  .dish-count .unit{display:block;font-size:1.15vh;letter-spacing:.15vw;font-weight:600;
+    color:var(--ink-faint);margin-top:.6vh;text-transform:uppercase;font-family:'Jost',sans-serif}
+  .dish-mid{flex:1;min-width:0}
+  .dish-name{font-size:3vh;font-weight:600;letter-spacing:.02vw;line-height:1.05;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dish-note{display:inline-flex;align-items:center;gap:.5vw;margin-top:1.1vh;
+    font-size:1.5vh;font-weight:600;letter-spacing:.03vw;padding:.6vh 1vw;border-radius:2vh}
+  .note-buy{background:rgba(229,84,78,.14);color:var(--buy);border:1px solid rgba(229,84,78,.35)}
+  .note-prep{background:rgba(143,201,163,.12);color:var(--prep-ok);border:1px solid rgba(143,201,163,.3)}
+
+  .col-empty{flex:1 1 auto;display:flex;align-items:center;justify-content:center;
+    color:var(--ink-faint);font-size:2vh;letter-spacing:.05vw;
+    border:1px dashed var(--line);border-radius:1.2vh}
+
+  /* ---- footer: page dots + legend ---- */
+  .foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+    padding:1.2vh 2.2vw;border-top:1px solid var(--line);
+    font-size:1.4vh;letter-spacing:.05vw;color:var(--ink-faint)}
+  .foot b{color:var(--ink-dim)}
+  .dots{display:flex;gap:.8vw;align-items:center}
+  .dot{width:1.1vh;height:1.1vh;border-radius:50%;background:var(--line);transition:.3s}
+  .dot.on{background:var(--gold);width:2.6vh;border-radius:.55vh}
+  .page-lbl{font-family:'Barlow Semi Condensed',sans-serif;letter-spacing:.1vw;color:var(--ink-dim)}
+
+  @media (prefers-reduced-motion:reduce){.live .pulse{animation:none}}
+
+  /* portrait fallback (counter phone upright): stack the two columns */
+  @media (orientation:portrait){
+    .board{flex-direction:column}
+    .dish-count{font-size:8vh;min-width:16vw}
+    .dish-name{font-size:3.4vh}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand"><span class="word">ALCEA</span><span class="tag">KITCHEN BOARD</span></div>
+  <div class="board-title">Dishes we can still cook</div>
+  <div class="clock">
+    <span class="live"><span class="pulse"></span>Live</span>
+    <span class="updated" id="updated">—</span>
+    <a class="exit" href="index.html" title="Exit">✕</a>
+  </div>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="foot">
+  <span><b>Critical</b> under 10 left &nbsp;·&nbsp; <b>Warning</b> under 20 left &nbsp;·&nbsp; sample data</span>
+  <div class="dots" id="dots"></div>
+  <span class="page-lbl" id="pagelbl"></span>
+</div>
+
+<script>
+/* ============================================================
+   DUMMY DATA — hardcoded, NOT connected to the live database.
+     cookable  = how many more can be made from current prep
+     canRefill = true  -> kitchen can prep more (raw available)
+                 false -> raw also low, manager must buy
+   ============================================================ */
+const DISHES = [
+  { name:"Nasi Lemak",         cookable:4,  canRefill:false },
+  { name:"Eggs Benedict",      cookable:6,  canRefill:true  },
+  { name:"Roti Bakar Set",     cookable:8,  canRefill:false },
+  { name:"Chicken Chop",       cookable:9,  canRefill:true  },
+  { name:"Big Breakfast",      cookable:13, canRefill:false },
+  { name:"Mee Goreng",         cookable:15, canRefill:true  },
+  { name:"Kaya Toast",         cookable:18, canRefill:true  },
+  { name:"Nasi Goreng Kampung",cookable:19, canRefill:false },
+];
+
+const CRIT=10, WARN=20;
+const ROWS_PER_COL = 4;    // dish cards per column per page (keeps them big on a TV)
+const PAGE_MS = 8000;      // rotate pages every 8s
+const REFRESH_MS = 30000;  // recompute data every 30s
+
+let pageIndex = 0, pages = [];
+
+function noteHTML(canRefill){
+  return canRefill
+    ? `<span class="dish-note note-prep">✓ Can prep more</span>`
+    : `<span class="dish-note note-buy">▲ Buy ingredients</span>`;
+}
+function dishCard(d, cls){
+  return `<div class="dish ${cls}">
+    <div class="dish-count">${d.cookable}<span class="unit">can cook</span></div>
+    <div class="dish-mid"><div class="dish-name">${d.name}</div>${noteHTML(d.canRefill)}</div>
+  </div>`;
+}
+function chunk(arr){const out=[];for(let i=0;i<arr.length;i+=ROWS_PER_COL)out.push(arr.slice(i,i+ROWS_PER_COL));return out.length?out:[[]];}
+
+function buildPages(){
+  const crit = DISHES.filter(d=>d.cookable<CRIT).sort((a,b)=>a.cookable-b.cookable);
+  const warn = DISHES.filter(d=>d.cookable>=CRIT && d.cookable<WARN).sort((a,b)=>a.cookable-b.cookable);
+  const cC=chunk(crit), wC=chunk(warn);
+  const n=Math.max(cC.length,wC.length);
+  const built=[];
+  for(let i=0;i<n;i++) built.push({crit:cC[i]||[], warn:wC[i]||[]});
+  return {pages:built, critTotal:crit.length, warnTotal:warn.length, allClear:crit.length===0&&warn.length===0};
+}
+
+function renderPage(){
+  const data = buildPages();
+  pages = data.pages;
+  if(pageIndex >= pages.length) pageIndex = 0;
+  const board = document.getElementById('board');
+
+  if(data.allClear){
+    board.innerHTML = `<div class="col-empty" style="flex:1;color:var(--prep-ok)">
+      <div style="text-align:center">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:5vh;color:var(--prep-ok);margin-bottom:1vh">All dishes well stocked</div>
+        <div style="font-size:2vh;color:var(--ink-faint)">Nothing under ${WARN} portions.</div>
+      </div></div>`;
+    document.getElementById('dots').innerHTML='';
+    document.getElementById('pagelbl').textContent='';
+    stamp(); return;
+  }
+
+  const pg = pages[pageIndex];
+  const critCards = pg.crit.length ? pg.crit.map(d=>dishCard(d,'crit')).join('') : `<div class="col-empty">No critical dishes</div>`;
+  const warnCards = pg.warn.length ? pg.warn.map(d=>dishCard(d,'warn')).join('') : `<div class="col-empty">No warning dishes</div>`;
+
+  board.innerHTML = `
+    <div class="col sec-critical">
+      <div class="col-head"><span class="col-dot"></span>
+        <span class="col-title">Critical</span><span class="col-range">under ${CRIT} left</span>
+        <span class="col-count">${data.critTotal} total</span></div>
+      <div class="col-list">${critCards}</div>
+    </div>
+    <div class="col sec-warning">
+      <div class="col-head"><span class="col-dot"></span>
+        <span class="col-title">Warning</span><span class="col-range">under ${WARN} left</span>
+        <span class="col-count">${data.warnTotal} total</span></div>
+      <div class="col-list">${warnCards}</div>
+    </div>`;
+
+  const dots=document.getElementById('dots');
+  if(pages.length>1){
+    dots.innerHTML = pages.map((_,i)=>`<span class="dot ${i===pageIndex?'on':''}"></span>`).join('');
+    document.getElementById('pagelbl').textContent = `Page ${pageIndex+1} / ${pages.length}`;
+  } else { dots.innerHTML=''; document.getElementById('pagelbl').textContent=''; }
+  stamp();
+}
+
+function stamp(){
+  const now=new Date();
+  document.getElementById('updated').textContent =
+    'Updated ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function nextPage(){
+  if(pages.length>1){ pageIndex=(pageIndex+1)%pages.length; renderPage(); }
+}
+
+renderPage();
+setInterval(nextPage, PAGE_MS);        // cycle pages
+setInterval(renderPage, REFRESH_MS);   // data refresh point (when wired to live data)
+</script>
+</body>
+</html>
